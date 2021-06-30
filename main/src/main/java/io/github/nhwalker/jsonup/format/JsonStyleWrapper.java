@@ -2,7 +2,7 @@ package io.github.nhwalker.jsonup.format;
 
 import java.util.Objects;
 
-import io.github.nhwalker.jsonup.types.JsonElement;
+import io.github.nhwalker.jsonup.elements.JsonElement;
 
 public class JsonStyleWrapper {
 

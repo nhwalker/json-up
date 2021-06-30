@@ -2,7 +2,7 @@ package io.github.nhwalker.jsonup.format;
 
 import java.util.function.Consumer;
 
-import io.github.nhwalker.jsonup.internal.Configure;
+import io.github.nhwalker.jsonup.util.Configure;
 
 public final class JsonNumberStyle {
 

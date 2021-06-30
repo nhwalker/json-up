@@ -3,7 +3,7 @@ package io.github.nhwalker.jsonup.format;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
-import io.github.nhwalker.jsonup.internal.Configure;
+import io.github.nhwalker.jsonup.util.Configure;
 
 public class JsonStringStyle {
   public static final JsonStringStyle DEFAULT = new JsonStringStyle();

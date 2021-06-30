@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
+import io.github.nhwalker.jsonup.util.RepeatingStringFactory;
+
 public abstract class JsonWhitespace {
 
   public static JsonWhitespace none() {
