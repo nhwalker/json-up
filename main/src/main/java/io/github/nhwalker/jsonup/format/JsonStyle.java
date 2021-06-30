@@ -7,18 +7,31 @@ import io.github.nhwalker.jsonup.internal.Configure;
 public final class JsonStyle {
 
   public static final JsonStyle COMPACT = new JsonStyle();
+  public static final JsonStyle COMPACT_LENIENT = COMPACT.withChanges(JsonStyle::makeLenient);
+
   public static final JsonStyle SINGLE_LINE = new JsonStyle(x -> {
     x.arrayStyle(JsonArrayStyle.SINGLE_LINE);
     x.objectStyle(JsonObjectStyle.SINGLE_LINE);
   });
+  public static final JsonStyle SINGLE_LINE_LENIENT = SINGLE_LINE.withChanges(JsonStyle::makeLenient);
+
   public static final JsonStyle MULTI_LINE = new JsonStyle(x -> {
     x.arrayStyle(JsonArrayStyle.MULTI_LINE);
     x.objectStyle(JsonObjectStyle.MULTI_LINE);
   });
+  public static final JsonStyle MULTI_LINE_LENIENT = MULTI_LINE.withChanges(JsonStyle::makeLenient);
+
   public static final JsonStyle MULTI_LINE_TALL = new JsonStyle(x -> {
     x.arrayStyle(JsonArrayStyle.MULTI_LINE_TALL);
     x.objectStyle(JsonObjectStyle.MULTI_LINE_TALL);
   });
+  public static final JsonStyle MULTI_LINE_TALL_LENIENT = MULTI_LINE_TALL.withChanges(JsonStyle::makeLenient);
+
+  public static void makeLenient(Args args) {
+    args.numberStyle(args.numberStyle().withChanges(numArgs -> {
+      numArgs.allowNonFiniteStrings(true);
+    }));
+  }
 
   public static class Args {
     private JsonNumberStyle numberStyle = JsonNumberStyle.DEFAULT;
@@ -190,4 +203,5 @@ public final class JsonStyle {
   public final String newlineString() {
     return newlineString;
   }
+
 }
