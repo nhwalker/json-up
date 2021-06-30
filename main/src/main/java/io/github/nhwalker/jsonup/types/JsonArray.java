@@ -6,10 +6,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 
-import io.github.nhwalker.jsonup.format.JsonArrayStyle;
 import io.github.nhwalker.jsonup.format.JsonStyle;
 import io.github.nhwalker.jsonup.internal.Configure;
 
@@ -51,19 +49,19 @@ public class JsonArray extends JsonElement {
     }
 
     public void add(JsonElement element) {
-      this.elements.add(Objects.requireNonNull(element));
+      verifyEntry(element, elements.size());
+      this.elements.add(element);
     }
 
     public void addAll(JsonElement... elements) {
       addAll(Arrays.asList(elements));
-
     }
 
     public void addAll(Collection<? extends JsonElement> items) {
       int verifyIndex = this.elements.size();
       this.elements.addAll(items);
       if (this.elements.size() != verifyIndex) {
-        verifyNoNulls(this.elements.subList(verifyIndex, this.elements.size()));
+        verifyEntries(this.elements.subList(verifyIndex, this.elements.size()));
       }
     }
 
@@ -73,17 +71,18 @@ public class JsonArray extends JsonElement {
   private transient List<JsonElement> resolved;
 
   public JsonArray(JsonElement... entries) {
-    this(Collections.unmodifiableList(Arrays.asList(entries)), false);
-    verifyEntries();
+    this.entries = Collections.unmodifiableList(Arrays.asList(entries));
+    verifyEntries(this.entries);
   }
 
   public JsonArray(Collection<? extends JsonElement> entries) {
-    this(Collections.unmodifiableList(new ArrayList<>(entries)), false);
-    verifyEntries();
+    this.entries = Collections.unmodifiableList(new ArrayList<>(entries));
+    verifyEntries(this.entries);
   }
 
   public JsonArray(Args args) {
-    this(args.elements);
+    this.entries = Collections.unmodifiableList(new ArrayList<>(args.elements));
+    // already verified
   }
 
   public JsonArray(Consumer<Args> args) {
@@ -94,15 +93,17 @@ public class JsonArray extends JsonElement {
     this.entries = list;
   }
 
-  private void verifyEntries() {
-    verifyNoNulls(this.entries);
+  private static void verifyEntries(List<JsonElement> list) {
+    for (int i = 0; i < list.size(); i++) {
+      verifyEntry(list.get(i), i);
+    }
   }
 
-  private static void verifyNoNulls(List<?> list) {
-    for (int i = 0; i < list.size(); i++) {
-      if (list.get(i) == null) {
-        throw new NullPointerException("Null value at index" + i);
-      }
+  private static void verifyEntry(JsonElement element, int index) {
+    if (element == null) {
+      throw new NullPointerException("Null value. index:" + index);
+    } else if (element.isObjectEntry()) {
+      throw new IllegalArgumentException("Cannot add Object Entries to an array. index:" + index);
     }
   }
 
@@ -159,30 +160,6 @@ public class JsonArray extends JsonElement {
   }
 
   @Override
-  protected int write(Appendable out, JsonStyle style, int indentLevel) throws IOException {
-    JsonArrayStyle arrayStyle = style.arrayStyle();
-    int indent = arrayStyle.beforeOpenBracket().write(style, indentLevel, out);
-    out.append('[');
-    if (entries.isEmpty()) {
-      indent = arrayStyle.betweenEmptyBrackets().write(style, indent, out);
-    } else {
-      indent = arrayStyle.afterOpenBracket().write(style, indent, out);
-      indent = entries.get(0).write(out, style, indent);
-      for (int i = 1; i < entries.size(); i++) {
-        indent = arrayStyle.beforeEntrySeperator().write(style, indent, out);
-        out.append(',');
-        indent = arrayStyle.afterEntrySeperator().write(style, indent, out);
-        indent = entries.get(i).write(out, style, indent);
-      }
-      indent = arrayStyle.beforeCloseBracket().write(style, indent, out);
-    }
-
-    out.append(']');
-    indent = arrayStyle.afterCloseBracket().write(style, indent, out);
-    return indent;
-  }
-
-  @Override
   public Kind kind() {
     return Kind.ARRAY;
   }
@@ -195,5 +172,11 @@ public class JsonArray extends JsonElement {
   @Override
   public boolean isArray() {
     return true;
+  }
+
+  @Override
+  public int defaultWrite(JsonWriterContext context, Appendable out, JsonStyle style, int indentLevel)
+      throws IOException {
+    return JsonArrayWriter.DEFAULT.write(context, this, out, style, indentLevel);
   }
 }

@@ -10,12 +10,6 @@ public class JsonNull extends JsonElement {
   private JsonNull() {
   }
 
-  @Override
-  protected int write(Appendable out, JsonStyle style, int indentLevel) throws IOException {
-    out.append("null");
-    return indentLevel;
-  }
-
   public Object nullValue() {
     return null;
   }
@@ -49,5 +43,11 @@ public class JsonNull extends JsonElement {
   @Override
   public JsonNull asNull() {
     return this;
+  }
+  
+  @Override
+  public int defaultWrite(JsonWriterContext context, Appendable out, JsonStyle style, int indentLevel)
+      throws IOException {
+    return JsonNullWriter.DEFAULT.write(context, this, out, style, indentLevel);
   }
 }

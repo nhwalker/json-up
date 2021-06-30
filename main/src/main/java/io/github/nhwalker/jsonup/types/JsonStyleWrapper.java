@@ -31,8 +31,9 @@ public class JsonStyleWrapper extends VirtualJsonElement {
   }
 
   @Override
-  protected int write(Appendable out, JsonStyle style, int indentLevel) throws IOException {
-    return element.write(out, this.style.apply(style), indentLevel);
+  public int defaultWrite(JsonWriterContext context, Appendable out, JsonStyle style, int indentLevel)
+      throws IOException {
+    return context.elementWriter().write(context, element, out, this.style.apply(style), indentLevel);
   }
 
   @Override
@@ -61,4 +62,5 @@ public class JsonStyleWrapper extends VirtualJsonElement {
     }
     return true;
   }
+
 }

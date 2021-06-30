@@ -23,12 +23,6 @@ public class JsonBoolean extends JsonElement {
   }
 
   @Override
-  protected int write(Appendable out, JsonStyle style, int indentLevel) throws IOException {
-    out.append(Boolean.toString(value));
-    return indentLevel;
-  }
-
-  @Override
   public int hashCode() {
     final int prime = 31;
     return prime + Boolean.hashCode(value);
@@ -62,5 +56,11 @@ public class JsonBoolean extends JsonElement {
   @Override
   public JsonBoolean asBoolean() {
     return this;
+  }
+
+  @Override
+  public int defaultWrite(JsonWriterContext context, Appendable out, JsonStyle style, int indentLevel)
+      throws IOException {
+    return JsonBooleanWriter.DEFAULT.write(context, this, out, style, indentLevel);
   }
 }

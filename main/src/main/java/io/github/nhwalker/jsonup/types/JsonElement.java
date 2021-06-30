@@ -10,7 +10,7 @@ import io.github.nhwalker.jsonup.format.JsonStyle;
 public abstract class JsonElement {
 
   public static enum Kind {
-    NULL, BOOLEAN, NUMBER, STRING, ARRAY, OBJECT
+    NULL, BOOLEAN, NUMBER, STRING, ARRAY, OBJECT, OBJECT_ENTRY,
   }
 
   JsonElement() {
@@ -70,6 +70,14 @@ public abstract class JsonElement {
     throw typeException(JsonObject.class);
   }
 
+  public boolean isObjectEntry() {
+    return false;
+  }
+
+  public JsonObjectEntry asObjectEntry() {
+    throw typeException(JsonObjectEntry.class);
+  }
+
   public final JsonNumber asNumberLenient(boolean allowNonFinite) {
     if (isNumber()) {
       return asNumber();
@@ -91,6 +99,8 @@ public abstract class JsonElement {
       if (array.entries().size() == 1) {
         return array.entries().get(0).asNumberLenient(allowNonFinite);
       }
+    } else if (isObjectEntry()) {
+      return asObjectEntry().valueElement().asNumberLenient(allowNonFinite);
     }
 
     throw typeException(JsonNumber.class);
@@ -118,7 +128,10 @@ public abstract class JsonElement {
     if (isArray()) {
       return asArray();
     }
-    return new JsonArray(Collections.singletonList(this), false);
+    if (!isObjectEntry()) {
+      return new JsonArray(Collections.singletonList(this), false);
+    }
+    throw typeException(JsonArray.class);
   }
 
   public final JsonBoolean asBooleanLenient() {
@@ -153,6 +166,8 @@ public abstract class JsonElement {
       return asObject();
     case STRING:
       return asString();
+    case OBJECT_ENTRY:
+      return asObjectEntry();
     default:
       // should not happen
       throw new IllegalArgumentException("Unknown kind " + kind);
@@ -166,20 +181,12 @@ public abstract class JsonElement {
   public final String toString(JsonStyle style) {
     StringBuilder b = new StringBuilder();
     try {
-      write(b, style);
+      defaultWrite(JsonWriterContext.DEFAULT, b, style, 0);
     } catch (IOException e) {
       // StringBuilder should not throw an IOException
       throw new UncheckedIOException(e);
     }
     return b.toString();
-  }
-
-  public final void write(Appendable out) throws IOException {
-    write(out, JsonStyle.SINGLE_LINE_LENIENT);
-  }
-
-  public final void write(Appendable out, JsonStyle style) throws IOException {
-    write(out, style, 0);
   }
 
   @Override
@@ -188,7 +195,8 @@ public abstract class JsonElement {
   @Override
   public abstract boolean equals(Object obj);
 
-  protected abstract int write(Appendable out, JsonStyle style, int indentLevel) throws IOException;
+  public abstract int defaultWrite(JsonWriterContext context, Appendable out, JsonStyle style, int indentLevel)
+      throws IOException;
 
   private IllegalStateException typeException(Class<?> type) {
     return new IllegalStateException(getClass() + "is not a " + type);

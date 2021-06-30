@@ -9,7 +9,7 @@ import io.github.nhwalker.jsonup.exceptions.JsonParseException;
 
 public class ParserUtils {
   public static <T extends JsonElement> List<T> iterableParse(JsonParserContext context, PeekingReader reader,
-      char openBracket, char closeBracket, JsonParser<T> itemParser) throws IOException, JsonParseException {
+      char openBracket, char closeBracket, JsonParser<? extends T> itemParser) throws IOException, JsonParseException {
 
     ArrayList<T> values = new ArrayList<>();
 

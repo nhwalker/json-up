@@ -15,7 +15,7 @@ public final class JsonObjectParser extends JsonParser<JsonObject> {
 
   @Override
   public JsonObject parse(JsonParserContext context, PeekingReader reader) throws IOException, JsonParseException {
-    List<JsonObjectEntry> items = ParserUtils.iterableParse(context, reader, '{', '}', context.objectEntryParser());
+    List<JsonElement> items = ParserUtils.iterableParse(context, reader, '{', '}', context.objectEntryParser());
     return new JsonObject(items, false);
   }
 }

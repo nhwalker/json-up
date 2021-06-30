@@ -9,11 +9,11 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import io.github.nhwalker.jsonup.exceptions.JsonFormatException;
-import io.github.nhwalker.jsonup.format.JsonObjectStyle;
 import io.github.nhwalker.jsonup.format.JsonStyle;
 import io.github.nhwalker.jsonup.internal.Configure;
 
@@ -21,7 +21,7 @@ public final class JsonObject extends JsonElement {
 
   public static class Args {
 
-    private final ArrayList<JsonObjectEntry> elements;
+    private final ArrayList<JsonElement> elements;
     private boolean allowDuplicates = false;
 
     public Args(int capacity) {
@@ -40,7 +40,7 @@ public final class JsonObject extends JsonElement {
       this.elements = new ArrayList<>();
     }
 
-    public List<JsonObjectEntry> entries() {
+    public List<JsonElement> entries() {
       return elements;
     }
 
@@ -72,9 +72,19 @@ public final class JsonObject extends JsonElement {
       elements.add(new JsonObjectEntry(name, element));
     }
 
+    public void add(JsonObjectEntry entry) {
+      elements.add(Objects.requireNonNull(entry));
+    }
+
+    public void add(JsonElement element) {
+      if (!element.isObjectEntry()) {
+        throw new IllegalArgumentException("Can only add Object Entries");
+      }
+      elements.add(element);
+    }
   }
 
-  private final List<JsonObjectEntry> entries;
+  private final List<JsonElement> entries;
   private transient Map<String, JsonElement> asMap;
 
   public JsonObject(Consumer<Args> args) {
@@ -82,61 +92,70 @@ public final class JsonObject extends JsonElement {
   }
 
   public JsonObject(Args args) {
-    this(Collections.unmodifiableList(new ArrayList<>(args.elements)), false);
+    this.entries = Collections.unmodifiableList(new ArrayList<>(args.elements));
     verifyEntries(args.allowDuplicates());
   }
 
-  public JsonObject(JsonObjectEntry... entries) {
-    this(false, entries);
+  public JsonObject(JsonElement... entries) {
+    this.entries = Collections.unmodifiableList(Arrays.asList(entries));
+    verifyEntries(false);
   }
 
-  public JsonObject(boolean allowDuplicates, JsonObjectEntry... entries) {
-    this(Collections.unmodifiableList(Arrays.asList(entries)), false);
+  public JsonObject(boolean allowDuplicates, JsonElement... entries) {
+    this.entries = Collections.unmodifiableList(Arrays.asList(entries));
     verifyEntries(allowDuplicates);
   }
 
   public JsonObject(Collection<JsonObjectEntry> entries) {
-    this(false, entries);
+    this(Collections.unmodifiableList(new ArrayList<>(entries)), false);
+    verifyEntries(false);
   }
 
   public JsonObject(boolean allowDuplicates, Collection<JsonObjectEntry> entries) {
-    this(Collections.unmodifiableList(new ArrayList<>(entries)), false);
+    this.entries = Collections.unmodifiableList(new ArrayList<>(entries));
     verifyEntries(allowDuplicates);
   }
 
-  /* package-only */ JsonObject(List<JsonObjectEntry> list, boolean unsafeFlag) {
+  /* package-only */ JsonObject(List<JsonElement> list, boolean unsafeFlag) {
     this.entries = list;
+  }
+
+  private static void verifyEntry(int index, JsonElement element) {
+    if (element == null) {
+      throw new NullPointerException("Entries may not be null index:" + index);
+    }
+    if (!element.isObjectEntry()) {
+      throw new IllegalArgumentException("Entries must be object entries");
+    }
   }
 
   private void verifyEntries(boolean allowDuplicates) {
     if (allowDuplicates) {
       for (int i = 0; i < this.entries.size(); i++) {
-        if (this.entries().get(i) == null) {
-          throw new NullPointerException("Entries may not be null index:" + i);
-        }
+        verifyEntry(i, this.entries.get(i));
       }
     } else {
       Set<String> matches = new HashSet<>();
       for (int i = 0; i < this.entries.size(); i++) {
-        JsonObjectEntry e = this.entries.get(i);
-        if (e == null) {
-          throw new NullPointerException("Entries may not be null index:" + i);
-        } else if (!matches.add(e.name())) {
+        JsonElement e = this.entries.get(i);
+        verifyEntry(i, e);
+        if (!matches.add(e.asObjectEntry().name())) {
           throw new JsonFormatException("Duplicate Keys In Object Not Allowed index:" + i);
         }
       }
     }
   }
 
-  public List<JsonObjectEntry> entries() {
+  public List<JsonElement> entries() {
     return entries;
   }
 
   public Map<String, JsonElement> asMap() {
     if (asMap == null) {
       Map<String, JsonElement> map = new LinkedHashMap<>();
-      for (JsonObjectEntry e : entries) {
-        map.put(e.name(), e.resolvedValue());
+      for (JsonElement e : entries) {
+        JsonObjectEntry entry = e.asObjectEntry();
+        map.put(entry.name(), entry.resolvedValue());
       }
       asMap = Collections.unmodifiableMap(map);
     }
@@ -165,30 +184,6 @@ public final class JsonObject extends JsonElement {
   }
 
   @Override
-  protected int write(Appendable out, JsonStyle style, int indentLevel) throws IOException {
-    JsonObjectStyle objStyle = style.objectStyle();
-    int indent = objStyle.beforeOpenBracket().write(style, indentLevel, out);
-    out.append('{');
-    if (entries.isEmpty()) {
-      indent = objStyle.betweenEmptyBrackets().write(style, indent, out);
-    } else {
-      indent = objStyle.afterOpenBracket().write(style, indent, out);
-      indent = entries.get(0).write(out, style, indent);
-      for (int i = 1; i < entries.size(); i++) {
-        indent = objStyle.beforeEntrySeperator().write(style, indent, out);
-        out.append(',');
-        indent = objStyle.afterEntrySeperator().write(style, indent, out);
-        indent = entries.get(i).write(out, style, indent);
-      }
-      indent = objStyle.beforeCloseBracket().write(style, indent, out);
-    }
-
-    out.append('}');
-    indent = objStyle.afterCloseBracket().write(style, indent, out);
-    return indent;
-  }
-
-  @Override
   public Kind kind() {
     return Kind.OBJECT;
   }
@@ -201,5 +196,11 @@ public final class JsonObject extends JsonElement {
   @Override
   public JsonObject asObject() {
     return this;
+  }
+
+  @Override
+  public int defaultWrite(JsonWriterContext context, Appendable out, JsonStyle style, int indentLevel)
+      throws IOException {
+    return JsonObjectWriter.DEFAULT.write(context, this, out, style, indentLevel);
   }
 }
