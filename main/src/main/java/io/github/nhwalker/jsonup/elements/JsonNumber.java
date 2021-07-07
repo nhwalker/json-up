@@ -26,6 +26,10 @@ public class JsonNumber extends JsonElement {
     return value.longValue();
   }
 
+  public float floatValue() {
+    return value.floatValue();
+  }
+
   public double doubleValue() {
     return value.doubleValue();
   }
@@ -89,7 +93,7 @@ public class JsonNumber extends JsonElement {
   public boolean isNumber() {
     return true;
   }
-  
+
   @Override
   public int defaultWrite(JsonWriterContext context, Appendable out, JsonStyle style, int indentLevel)
       throws IOException {

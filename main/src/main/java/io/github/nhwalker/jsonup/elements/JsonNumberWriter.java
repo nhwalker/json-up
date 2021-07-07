@@ -20,7 +20,6 @@ public class JsonNumberWriter extends JsonWriter<JsonNumber> {
         || value instanceof Byte //
         || value instanceof Short//
         || value instanceof AtomicInteger //
-        || value instanceof AtomicLong //
         || value instanceof BigInteger) {
       writeInt(out, style, value.intValue());
     } else if (value instanceof Long || value instanceof AtomicLong) {

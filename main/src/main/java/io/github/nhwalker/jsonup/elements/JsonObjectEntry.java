@@ -10,22 +10,19 @@ public final class JsonObjectEntry extends JsonElement {
   private final JsonElement key;
   private final JsonElement value;
 
-
   public JsonObjectEntry(JsonElement key, JsonElement value) {
-    this.key = key;
-    this.value = value;
-    verify();
+    if (key.isString()) {
+      this.key = key;
+    } else {
+      this.key = key.asStringLenient();
+    }
+
+    this.value = Objects.requireNonNull(value);
   }
 
   @Override
   public Kind kind() {
     return Kind.OBJECT_ENTRY;
-  }
-
-  private void verify() {
-    Objects.requireNonNull(key);
-    Objects.requireNonNull(value);
-    this.key.asString();
   }
 
   public JsonElement keyElement() {

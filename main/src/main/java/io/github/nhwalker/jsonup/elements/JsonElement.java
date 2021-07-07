@@ -123,7 +123,7 @@ public abstract class JsonElement {
     }
     throw typeException(JsonString.class);
   }
-
+  
   public final JsonArray asArrayLenient() {
     if (isArray()) {
       return asArray();
